@@ -18,18 +18,17 @@ exports.good = functions.https.onRequest(async (request, response) => {
   }
 });
 
-function onGet(req, resp) {
-  const url_encoded = req.query['url_encoded']
-  if (url_encoded == undefined || url_encoded == '') {
-    return res.send("Error: Value error. No url in request.")
-  }
-  let site_doc = await getSiteDocument(url_encoded)
-  return res.send(site_doc.good_count)
-}
+// function onGet(req, resp) {
+//   const url_encoded = req.query['url_encoded']
+//   if (url_encoded == undefined || url_encoded == '') {
+//     return res.send("Error: Value error. No url in request.")
+//   }
+//   let site_doc = await getSiteDocument(url_encoded)
+//   return res.send(site_doc.good_count)
+// }
 
 function onPost(req, res) {
   const url_encoded = req.params['url_encoded']
-  const client_ip = request.get('fastly-client-ip')
 
   if (url_encoded == undefined || url_encoded == '') {
     return response.send("Error: Value error. No url in request.")
@@ -48,15 +47,15 @@ function onPost(req, res) {
   }
 }
 
-function checkUpdatable(client_access_log) {
-  if (!client_access_log.exists) {
-    return true
-  }
-  const now = new Date().getTime()
-  const last_modified = Date.parse(client_access_log.timestamp).getTime()
-  const day = 86400000
-  return now - last_modified > day
-}
+// function checkUpdatable(client_access_log) {
+//   if (!client_access_log.exists) {
+//     return true
+//   }
+//   const now = new Date().getTime()
+//   const last_modified = Date.parse(client_access_log.timestamp).getTime()
+//   const day = 86400000
+//   return now - last_modified > day
+// }
 
 async function getSiteDocument(url_encoded) {
   let site_doc = await sitesCol.doc(url_encoded).get('good_count')
@@ -78,9 +77,9 @@ function incrementSiteDocument(url_encoded, client_ip, good_count) {
   goodsCol.add({"good_count": good_count, "ip_adress": client_ip, "timestamp": FieldValue.timestamp})
 }
 
-function getAccessLog(url_encoded, ip_adress) {
-  return sitesCol.doc(url_encoded).collection("access_log").doc(ip_adress).get()
-}
+// function getAccessLog(url_encoded, ip_adress) {
+//   return sitesCol.doc(url_encoded).collection("access_log").doc(ip_adress).get()
+// }
 
 
 
