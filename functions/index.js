@@ -4,19 +4,30 @@ admin.initializeApp();
 
 const FieldValue = admin.firestore.FieldValue
 let sitesCol = admin.firestore().collection('sites')
+let goodsCol = admin.firestore().collection('goods')
 
 exports.incrementGood = functions.https.onCall(async (data, context) => {
   const siteUrl = data["url"]
   const goodCount = data["goodCount"]
+  const uid = getUid(context)
   if (!siteUrl) {
     throw Error("Value error. No url in request.")
   } else if (isNaN(goodCount)) {
     throw Error("Value error. good_count is NaN.")
   }
+  
   let siteDoc = await getSiteDocument(siteUrl)
-  await incrementSiteDocument(siteUrl, goodCount)
+  await incrementSiteDocument(siteUrl, goodCount, uid)
   return
 });
+
+function getUid(context) {
+  if (!context.auth) {
+    return 'unknown'
+  } else {
+    return context.auth.uid
+  }
+}
 
 // function onGet(req, resp) {
 //   const url_encoded = req.query['url_encoded']
@@ -54,11 +65,11 @@ function initSiteDocument(siteUrl) {
   })
 }
 
-function incrementSiteDocument(site_url, goodCount) {
+function incrementSiteDocument(site_url, goodCount, uid) {
   sitesCol.doc(site_url).update({"goodCount": FieldValue.increment(goodCount)})
-  // sitesCol.doc(url_encoded).collection("access_log").doc(ip_adress).update([{"timestamp": FieldValue.timestamp}])
-  // goodsCol.add({"good_count": good_count, "ip_adress": client_ip, "timestamp": FieldValue.timestamp})
+  goodsCol.add({"good_count": goodCount, "uid": uid, "timestamp": FieldValue.serverTimestamp()})
 }
+
 
 // function getAccessLog(url_encoded, ip_adress) {
 //   return sitesCol.doc(url_encoded).collection("access_log").doc(ip_adress).get()
