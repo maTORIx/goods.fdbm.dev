@@ -1,5 +1,6 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin')
+const cors = require('cors')({origin: true});
 admin.initializeApp();
 
 const FieldValue = admin.firestore.FieldValue
@@ -7,15 +8,17 @@ let sitesCol = admin.firestore().collection('sites')
 // let goodsCol = admin.firestore().collection('goods')
 
 exports.good = functions.https.onRequest(async (request, response) => {
-  const method = request.method
-  switch (method) {
-    case "GET":
-      return onGet(request, response)
-    case "POST":
-      return onPost(request, response)
-    default:
-      return response.send("Error: Unknown method.")
-  }
+  cors(request, response, () => {
+    const method = request.method
+    switch (method) {
+      case "GET":
+        return onGet(request, response)
+      case "POST":
+        return onPost(request, response)
+      default:
+        return response.status(400).send("Error: Unknown method.")
+    }
+  })  
 });
 
 // function onGet(req, resp) {
@@ -28,22 +31,20 @@ exports.good = functions.https.onRequest(async (request, response) => {
 // }
 
 async function onPost(req, res) {
-  const site_url = req.body['url']
-  const good_count = Number(req.body.good_count)
-
-  if (site_url == undefined || site_url == '') {
-    return res.send("Error: Value error. No url in request.")
-  }
-  if (good_count == NaN) {
-    return res.send("Error: Value error. good_count is NaN.")
+  if (!req.body["url"]) {
+    return res.status(400).send("Error: Value error. No url in request.")
+  } else if (isNaN(req.body["good_count"])) {
+    return res.status(400).send("Error: Value error. good_count is NaN.")
   }
 
+  const site_url = req.body["url"]
+  const good_count = Number(req.body["good_count"])
   let site_doc = await getSiteDocument(site_url)
   // let access_log = await getAccessLog(url_encoded, client_ip)
 
   // if (checkUpdatable(access_log)){
   await incrementSiteDocument(site_url, good_count)
-  return res.send("OK")
+  return res.status(200).send("OK")
   // }
 }
 
