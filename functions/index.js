@@ -31,26 +31,19 @@ exports.good = functions.https.onRequest(async (request, response) => {
 // }
 
 async function onPost(req, res) {
-  console.log(req.body)
-  console.log(typeof req.body)
   if (!req.body["url"]) {
-    console.log(1)
     return res.status(400).send("Error: Value error. No url in request.")
   } else if (isNaN(req.body["good_count"])) {
-    console.log(2)
     return res.status(400).send("Error: Value error. good_count is NaN.")
   }
 
   const site_url = req.body["url"]
   const good_count = Number(req.body["good_count"])
-  console.log(3)
   let site_doc = await getSiteDocument(site_url)
-  console.log(4)
   // let access_log = await getAccessLog(url_encoded, client_ip)
 
   // if (checkUpdatable(access_log)){
   await incrementSiteDocument(site_url, good_count)
-  console.log(5)
   return res.status(200).send("OK")
   // }
 }
