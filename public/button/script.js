@@ -1,8 +1,4 @@
-import { good } from "../../functions";
-
-const apiRoute = "http://localhost:5001/test-d9104/us-central1"
-const goodURL = apiRoute + "/good"
-
+// firebase settings
 const firebaseConfig = {
   apiKey: "AIzaSyATFlc90BK6PjVqOXmy1nmpuvCvvsrR5og",
   authDomain: "test-d9104.firebaseapp.com",
@@ -13,7 +9,12 @@ const firebaseConfig = {
   appId: "1:95028767661:web:92b4940f598286d1c30f24"
 };
 firebase.initializeApp(firebaseConfig);
-
+const cloudFunc = {
+    increment: firebase.functions().httpsCallable("incrementGood")
+}
+if (location.hostname == "localhost") {
+    firebase.functions().useFunctionsEmulator("http://localhost:5001");
+}
 
 window.addEventListener("DOMContentLoaded", async function() {
     const goodButton = document.querySelector("#good_button")
@@ -24,16 +25,17 @@ window.addEventListener("DOMContentLoaded", async function() {
     let multiClickValue = 0.3
     let defaultGoodCount, changable
 
+    // fetch data
     try {
         defaultGoodCount = await fetchGoodCount()
         changable = await fetchGoodChangeable()
     } catch(e) {
         showError(goodButton, 1, e)
     }
-
     goodButton.textContent = `Good: ${defaultGoodCount}`
-
-    if (!changable) return
+    if (!changable) {
+        return
+    }
 
     // auth user
     firebase.auth().signInAnonymously().catch(function(error) {
@@ -79,18 +81,7 @@ function postGood(goodCount) {
     if (!url) {
         url = encodeURIComponent("https://hoge.example.com/test?test=fuga")
     }
-    return fetch(goodURL, {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            "url": url,
-            "good_count": goodCount
-        })
-    }).then((res) => {
-        if (!res.ok) throw Error("Network error is occur.")
-    })
+    return cloudFunc.increment({"url": url, "goodCount": goodCount})
 }
 
 async function postError(error) {
