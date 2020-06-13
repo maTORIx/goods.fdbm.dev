@@ -1,12 +1,26 @@
+import { good } from "../../functions";
+
 const apiRoute = "http://localhost:5001/test-d9104/us-central1"
 const goodURL = apiRoute + "/good"
+
+const firebaseConfig = {
+  apiKey: "AIzaSyATFlc90BK6PjVqOXmy1nmpuvCvvsrR5og",
+  authDomain: "test-d9104.firebaseapp.com",
+  databaseURL: "https://test-d9104.firebaseio.com",
+  projectId: "test-d9104",
+  storageBucket: "test-d9104.appspot.com",
+  messagingSenderId: "95028767661",
+  appId: "1:95028767661:web:92b4940f598286d1c30f24"
+};
+firebase.initializeApp(firebaseConfig);
+
 
 window.addEventListener("DOMContentLoaded", async function() {
     const goodButton = document.querySelector("#good_button")
     let clicked = false
     let clickable = true
     let goodCount = 0
-    let standardValue = 1
+    let standardValue = 0
     let multiClickValue = 0.3
     let defaultGoodCount, changable
 
@@ -21,6 +35,13 @@ window.addEventListener("DOMContentLoaded", async function() {
 
     if (!changable) return
 
+    // auth user
+    firebase.auth().signInAnonymously().catch(function(error) {
+        console.error("failed to auth user.")
+        clickable = false
+        showError(goodButton, 2, error)
+    });
+
     goodButton.addEventListener("click", (e) => {
         if (!clickable) {
             console.log("not clickable. timeout or maximum.")
@@ -33,7 +54,7 @@ window.addEventListener("DOMContentLoaded", async function() {
                 try {
                     await postGood(goodCount)
                 } catch(e) {
-                    showError(goodButton, 2, e)
+                    showError(goodButton, 3, e)
                 }
                 goodButton.textContent = `Good: ${defaultGoodCount + goodCount}`
             }, 5000)
