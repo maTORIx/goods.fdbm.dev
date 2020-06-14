@@ -28,7 +28,6 @@ exports.getGood = functions.https.onCall(async (data, context) => {
   const siteUrl = data["url"]
   const uid = getUid(context)
   const siteDoc = await getSiteDocument(siteUrl, uid)
-  console.log(siteDoc)
   return {
     "goodCount": siteDoc.goodCount,
     "updatable": checkUpdatable(siteDoc, uid)
