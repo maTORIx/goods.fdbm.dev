@@ -16,60 +16,66 @@ exports.incrementGood = functions.https.onCall(async (data, context) => {
     throw Error("Value error. good_count is NaN.")
   }
   
-  let siteDoc = await getSiteDocument(siteUrl)
+  const siteDoc = await getSiteDocument(siteUrl, uid)
+  if (!checkUpdatable(siteDoc, uid)) {
+    throw Error("Forbidden access. One day has passed since the last Good to update")
+  }
   await incrementSiteDocument(siteUrl, goodCount, uid)
   return
 });
 
+exports.getGood = functions.https.onCall(async (data, context) => {
+  const siteUrl = data["url"]
+  const uid = getUid(context)
+  const siteDoc = await getSiteDocument(siteUrl, uid)
+  console.log(siteDoc)
+  return {
+    "goodCount": siteDoc.goodCount,
+    "updatable": checkUpdatable(siteDoc, uid)
+  }
+})
+
 function getUid(context) {
   if (!context.auth) {
-    return 'unknown'
+    return undefined
   } else {
     return context.auth.uid
   }
 }
 
-// function onGet(req, resp) {
-//   const url_encoded = req.query['url_encoded']
-//   if (url_encoded == undefined || url_encoded == '') {
-//     return res.send("Error: Value error. No url in request.")
-//   }
-//   let site_doc = await getSiteDocument(url_encoded)
-//   return res.send(site_doc.good_count)
-// }
-
-// function checkUpdatable(client_access_log) {
-//   if (!client_access_log.exists) {
-//     return true
-//   }
-//   const now = new Date().getTime()
-//   const last_modified = Date.parse(client_access_log.timestamp).getTime()
-//   const day = 86400000
-//   return now - last_modified > day
-// }
-
-async function getSiteDocument(siteUrl) {
+async function getSiteDocument(siteUrl, uid) {
   let siteDoc = await sitesCol.doc(siteUrl).get()
   if (siteDoc.exists) {
-    return siteDoc
+    return siteDoc.data()
   } else {
-    return await initSiteDocument(siteUrl)
+    return initSiteDocument(siteUrl)
   }
 }
 
 function initSiteDocument(siteUrl) {
   return sitesCol.doc(siteUrl).set({
-    goodCount: 0
+    goodCount: 0,
+    lastModified: {}
   }).then(() => {
-    return {"goodCount": 0}
+    return {"goodCount": 0, "lastModified": {}}
   })
 }
 
-function incrementSiteDocument(site_url, goodCount, uid) {
-  sitesCol.doc(site_url).update({"goodCount": FieldValue.increment(goodCount)})
-  goodsCol.add({"good_count": goodCount, "uid": uid, "timestamp": FieldValue.serverTimestamp()})
+function incrementSiteDocument(siteUrl, goodCount, uid) {
+  let data = {}
+  data["goodCount"] = FieldValue.increment(goodCount)
+  data[`lastModified.${uid}`] = FieldValue.serverTimestamp()
+  sitesCol.doc(siteUrl).update(data)
+  goodsCol.add({"good_count": goodCount, "uid": uid, "timestamp": FieldValue.serverTimestamp(), "url": siteUrl})
 }
 
+function checkUpdatable(siteDoc, uid) {
+  if (!uid || !siteDoc.lastModified[uid]) return true
+  const now = new Date().getTime()
+  const lastModified = siteDoc.lastModified[uid].toDate().getTime()
+  const day = 86400000
+  return (now - lastModified) > day
+}
 
 // function getAccessLog(url_encoded, ip_adress) {
 //   return sitesCol.doc(url_encoded).collection("access_log").doc(ip_adress).get()

@@ -10,11 +10,15 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const cloudFunc = {
-    increment: firebase.functions().httpsCallable("incrementGood")
+    increment: firebase.functions().httpsCallable("incrementGood"),
+    getStatus: firebase.functions().httpsCallable("getGood")
 }
 if (location.hostname == "localhost") {
     firebase.functions().useFunctionsEmulator("http://localhost:5001");
 }
+
+let url = encodeURIComponent(document.referrer)
+if (url == "") url = encodeURIComponent("https://test.example.com/fizz/buzz?huga=hoge")
 
 window.addEventListener("DOMContentLoaded", async function() {
     const goodButton = document.querySelector("#good_button")
@@ -23,17 +27,19 @@ window.addEventListener("DOMContentLoaded", async function() {
     let goodCount = 0
     let standardValue = 0
     let multiClickValue = 0.3
-    let defaultGoodCount, changable
+    let defaultGoodCount, updatable
 
     // fetch data
     try {
-        defaultGoodCount = await fetchGoodCount()
-        changable = await fetchGoodChangeable()
+        let result = await cloudFunc.getStatus({"url": url})
+        console.log(result.data)
+        defaultGoodCount = result.data.goodCount
+        updatable = result.data.updatable
     } catch(e) {
         showError(goodButton, 1, e)
     }
     goodButton.textContent = `Good: ${defaultGoodCount}`
-    if (!changable) {
+    if (!updatable) {
         return
     }
 
@@ -72,15 +78,8 @@ async function fetchGoodCount() {
     return 0
 }
 
-async function fetchGoodChangeable() {
-    return true
-}
 
 function postGood(goodCount) {
-    let url = encodeURIComponent(document.referrer)
-    if (!url) {
-        url = encodeURIComponent("https://hoge.example.com/test?test=fuga")
-    }
     return cloudFunc.increment({"url": url, "goodCount": goodCount})
 }
 
