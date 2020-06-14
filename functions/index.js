@@ -76,9 +76,5 @@ function checkUpdatable(siteDoc, uid) {
   return (now - lastModified) > day
 }
 
-// function getAccessLog(url_encoded, ip_adress) {
-//   return sitesCol.doc(url_encoded).collection("access_log").doc(ip_adress).get()
-// }
-
 
 
